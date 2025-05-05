@@ -1,0 +1,41 @@
+# Node modules (frontend + backend)
+**/node_modules/
+
+# Logs
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+
+# Environment files
+**/.env
+**/.env.local
+**/.env.*.local
+
+# macOS
+.DS_Store
+
+# Expo/React Native specific
+**/.expo/
+**/.expo-shared/
+**/.vscode/
+
+# Build artifacts
+**/dist/
+**/build/
+**/coverage/
+
+# TypeScript
+**/*.tsbuildinfo
+
+# React Native (Metro bundler cache etc.)
+**/ios/build/
+**/android/build/
+**/android/app/build/
+**/.gradle/
+**/.idea/
+**/.bundle/
+**/Pods/
+
+# Expo generated files
+**/expo-env.d.ts
+W
