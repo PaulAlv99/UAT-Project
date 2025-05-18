@@ -1,37 +1,48 @@
 import React from "react";
-import { Image, StyleSheet, View, Text, TouchableOpacity, ScrollView } from "react-native";
+import {
+  Image,
+  StyleSheet,
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  useWindowDimensions,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 
 const HomeScreen = () => {
-  const handleLogin = () => console.log("LOGIN pressed");
-  const handleRegister = () => console.log("REGISTER pressed");
+  const router = useRouter();
+  const { width } = useWindowDimensions();
+
+  const dynamicStyles = createStyles(width);
 
   return (
-    <SafeAreaView style={styles.primary}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+    <SafeAreaView style={dynamicStyles.primary}>
+      <ScrollView contentContainerStyle={dynamicStyles.scrollContent}>
         <Image
-          style={styles.logo}
+          style={dynamicStyles.logo}
           resizeMode="contain"
           source={require('@/assets/images/so_logo_1.png')}
         />
 
-        <Text style={styles.whereYour}>WHERE YOUR</Text>
-        <Text style={styles.recipes}>RECIPES</Text>
-        <Text style={styles.comeTogether}>COME TOGETHER</Text>
+        <Text style={dynamicStyles.whereYour}>WHERE YOUR</Text>
+        <Text style={dynamicStyles.recipes}>RECIPES</Text>
+        <Text style={dynamicStyles.comeTogether}>COME TOGETHER</Text>
 
-        <TouchableOpacity style={[styles.button, styles.loginButton]} onPress={handleLogin}>
-          <Text style={styles.buttonText}>LOGIN</Text>
+        <TouchableOpacity style={[dynamicStyles.button, dynamicStyles.loginButton]} onPress={() => router.push("/login")}>
+          <Text style={dynamicStyles.buttonText}>LOGIN</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.button, styles.registerButton]} onPress={handleRegister}>
-          <Text style={styles.buttonText}>REGISTER</Text>
+        <TouchableOpacity style={[dynamicStyles.button, dynamicStyles.registerButton]} onPress={() => router.push("/register")}>
+          <Text style={dynamicStyles.buttonText}>REGISTER</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (width: number) => StyleSheet.create({
   primary: {
     flex: 1,
     backgroundColor: "#c70038",
@@ -42,8 +53,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   logo: {
-    width: "100%",
-    height: 200,
+    width: width * 0.8,
+    height: width * 0.4,
     marginBottom: 20,
   },
   whereYour: {
@@ -77,9 +88,9 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   button: {
+    width: width * 0.75,
     borderRadius: 50,
     paddingVertical: 14,
-    paddingHorizontal: 40,
     marginVertical: 10,
     borderWidth: 3,
     borderColor: "#f8ac50",

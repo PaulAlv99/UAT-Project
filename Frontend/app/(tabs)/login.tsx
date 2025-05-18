@@ -1,122 +1,117 @@
 import * as React from "react";
-import { Image, StyleSheet, View, Text, ScrollView } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  Image, StyleSheet, View, Text, ScrollView, TextInput, TouchableOpacity,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { API_URL } from '@env'
+const ELEMENT_WIDTH = 290;
+const ELEMENT_HEIGHT = 55;
 
 const LoginScreen = () => {
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const router = useRouter();
+
+  const handleLogin = async () => {
+    if (!email || !password) return alert("Email and password are required.");
+
+    try {
+      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (data.success && data.token) {
+
+        await AsyncStorage.setItem("token", data.token);
+        await AsyncStorage.setItem("dark", "false");
+        setEmail(null);
+        setPassword(null);
+        router.push("/(tabs)/LandingScreen");
+      } else {
+        alert(data.message || "Login failed.");
+      }
+    } catch (err) {
+      console.error("Login Error:", err);
+      alert("Server error. Try again later.");
+    }
+  };
+
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <Image
-          style={styles.logo}
-          resizeMode="contain"
-          source={require('@/assets/images/so_logo_1.png')}
-        />
-
+        <Image style={styles.logo} resizeMode="contain" source={require('@/assets/images/so_logo_1.png')} />
         <Text style={styles.loginTitle}>LOGIN</Text>
 
-        <View style={styles.inputBox}>
-          <Text style={styles.label}>USER NAME</Text>
-        </View>
+        <TextInput
+          style={styles.inputBox}
+          placeholder="EMAIL"
+          placeholderTextColor="#95002a"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+        />
 
-        <View style={styles.inputBox}>
-          <Text style={styles.label}>PASSWORD</Text>
-        </View>
+        <TextInput
+          style={styles.inputBox}
+          placeholder="PASSWORD"
+          placeholderTextColor="#95002a"
+          secureTextEntry={true}
+          value={password}
+          onChangeText={setPassword}
+        />
 
-        <Text style={styles.forgotPassword}>FORGOT PASSWORD?</Text>
-
-        <View style={styles.loginButton}>
+        <Text style={styles.forgotPassword} onPress={() => router.push("/(tabs)/recover_password")}>
+                  FORGOT PASSWORD?
+        </Text>
+        <TouchableOpacity style={styles.button} onPress={handleLogin}>
           <Text style={styles.loginText}>ENTER</Text>
-        </View>
+        </TouchableOpacity>
 
-        <View style={styles.registerButton}>
-          <Text style={styles.registerText}>REGISTER</Text>
-        </View>
+        <Text style={styles.registerLink} onPress={() => router.push("/(tabs)/register")}>
+          Don’t have an account? REGISTER
+        </Text>
+
       </ScrollView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#ff8c00",
-  },
-  scrollContainer: {
-    alignItems: "center",
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-  },
-  logo: {
-    width: "100%",
-    height: 200,
-    marginBottom: 20,
-  },
+  container: { flex: 1, backgroundColor: "#ff8c00" },
+  scrollContainer: { alignItems: "center", paddingVertical: 40, paddingHorizontal: 20 },
+  logo: { width: "100%", height: 200, marginBottom: 20 },
   loginTitle: {
-    fontSize: 64,
-    fontFamily: "OpenSans-ExtraBold",
-    color: "#fff",
-    textShadowColor: "rgba(0, 0, 0, 0.25)",
-    textShadowOffset: { width: 0, height: 6 },
-    textShadowRadius: 4,
-    marginBottom: 20,
-  },
-  divider: {
-    marginVertical: 16,
+    fontSize: 64, fontFamily: "OpenSans-ExtraBold", color: "#fff",
+    textShadowColor: "rgba(0, 0, 0, 0.25)", textShadowOffset: { width: 0, height: 6 }, textShadowRadius: 4, marginBottom: 20,
   },
   inputBox: {
-    width: 290,
-    height: 48,
-    backgroundColor: "#fff",
-    borderColor: "rgba(180, 180, 180, 0.5)",
-    borderWidth: 5,
-    borderRadius: 100,
-    justifyContent: "center",
-    alignItems: "center",
-    marginVertical: 12,
+    width: ELEMENT_WIDTH, height: ELEMENT_HEIGHT, backgroundColor: "#fff",
+    borderColor: "rgba(180, 180, 180, 0.5)", borderWidth: 5, borderRadius: 100,
+    paddingHorizontal: 20, marginVertical: 12, fontSize: 18,
+    fontFamily: "OpenSans-Bold", color: "#95002a",
   },
-  label: {
-    fontSize: 24,
-    color: "#95002a",
-    fontFamily: "OpenSans-ExtraBold",
+  forgotPassword: { fontSize: 16, color: "#c70038", marginVertical: 8, textAlign: "center" },
+  button: {
+    width: ELEMENT_WIDTH, height: ELEMENT_HEIGHT, justifyContent: "center", alignItems: "center",
+    backgroundColor: "#c70038", borderColor: "#ff5833", borderWidth: 5, borderRadius: 100, marginTop: 20,
   },
-  forgotPassword: {
+  loginText: { fontSize: 24, color: "#fff", fontFamily: "OpenSans-ExtraBold" },
+  registerLink: {
+    color: "#fff",
     fontSize: 16,
-    color: "#c70038",
-    marginVertical: 8,
-    textAlign: "center",
+    textDecorationLine: "underline",
+    marginTop: 24,
+    fontFamily: "OpenSans-Bold",
   },
-  loginButton: {
-    marginTop: 20,
-    backgroundColor: "#c70038",
-    borderColor: "#ff5833",
-    borderWidth: 5,
-    borderRadius: 100,
-    width: 247,
-    height: 57,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loginText: {
-    fontSize: 32,
-    color: "#fff",
-    fontFamily: "OpenSans-ExtraBold",
-  },
-  registerButton: {
-    marginTop: 20,
-    backgroundColor: "#95002a",
-    borderColor: "#d02600",
-    borderWidth: 4,
-    borderRadius: 100,
-    width: 181,
-    height: 42,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  registerText: {
-    fontSize: 20,
-    color: "#fff",
-    fontFamily: "OpenSans-ExtraBold",
-  },
+
+  registerText: { fontSize: 20, color: "#fff", fontFamily: "OpenSans-ExtraBold" },
 });
 
 export default LoginScreen;

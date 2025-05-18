@@ -1,157 +1,100 @@
 import * as React from "react";
-import { Text, StyleSheet, View, ScrollView } from "react-native";
+import {
+  Text, StyleSheet, View, ScrollView, TextInput, TouchableOpacity, Switch,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 
-const REGISTER = () => {
+const RegisterScreen = () => {
+  const router = useRouter();
+  const [name, setName] = React.useState('');
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [preference, setPreference] = React.useState('');
+  const [cookiesAccepted, setCookiesAccepted] = React.useState(true);
+
+  const handleRegister = () => {
+    if (!name.trim()) return alert("Name is required.");
+    if (!email.trim() || !/^\S+@\S+\.\S+$/.test(email)) return alert("Valid email is required.");
+    if (!password || password.length < 6) return alert("Password must be at least 6 characters.");
+    if (!preference.trim()) return alert("Food preference is required.");
+    if (!cookiesAccepted) return alert("You must accept cookies.");
+
+    fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password, preference }),
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          alert("Registered successfully!");
+          router.push("/(tabs)/login");
+        } else {
+          alert(data.message || "Registration failed.");
+        }
+      })
+      .catch(() => alert("Server error. Try again later."));
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
-
         <Text style={styles.title}>REGISTER</Text>
         <View style={styles.divider} />
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputText}></Text>
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputText}></Text>
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputText}></Text>
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputText}></Text>
-        </View>
+        <TextInput style={styles.input} placeholder="FULL NAME" value={name} onChangeText={setName} placeholderTextColor="#95002a" />
+        <TextInput style={styles.input} placeholder="EMAIL" value={email} onChangeText={setEmail} placeholderTextColor="#95002a" keyboardType="email-address" />
+        <TextInput style={styles.input} placeholder="PASSWORD" value={password} onChangeText={setPassword} placeholderTextColor="#95002a" secureTextEntry />
+        <TextInput style={styles.input} placeholder="FOOD PREFERENCE" value={preference} onChangeText={setPreference} placeholderTextColor="#95002a" />
 
         <View style={styles.cookiesContainer}>
           <Text style={styles.cookiesText}>ACCEPT COOKIES</Text>
-          <View style={styles.toggle}>
-            <View style={styles.knob} />
-          </View>
+          <Switch
+            trackColor={{ false: "#ccc", true: "#ffcc00" }}
+            thumbColor={cookiesAccepted ? "#fff" : "#eee"}
+            value={cookiesAccepted}
+            onValueChange={setCookiesAccepted}
+          />
         </View>
 
-        <View style={styles.confirmButton}>
+        <TouchableOpacity style={styles.confirmButton} onPress={handleRegister}>
           <Text style={styles.confirmText}>CONFIRM</Text>
-        </View>
+        </TouchableOpacity>
 
-        <View style={styles.loginContainer}>
-          <Text style={styles.loginText}>LOGIN</Text>
-        </View>
+        <Text style={styles.loginLink} onPress={() => router.push("/(tabs)/login")}>
+          Already have an account? LOGIN
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#ff5833",
+  container: { flex: 1, backgroundColor: "#ff5833" },
+  scroll: { alignItems: "center", padding: 20 },
+  title: { fontSize: 48, color: "#fff", fontFamily: "OpenSans-ExtraBold", marginBottom: 8 },
+  divider: { height: 6, width: 180, backgroundColor: "#ffcc00", marginBottom: 20 },
+  input: {
+    width: "90%", backgroundColor: "#ffe789", borderRadius: 100, borderWidth: 5, borderColor: "#e5b700",
+    paddingHorizontal: 20, paddingVertical: 14, fontSize: 16, color: "#95002a", fontFamily: "OpenSans-Bold", marginVertical: 8,
   },
-  scroll: {
-    alignItems: "center",
-    padding: 20,
-  },
-  bgFrame: {
-    marginTop: -40,
-    marginBottom: 10,
-  },
-  title: {
-    fontSize: 48,
-    color: "#fff",
-    fontFamily: "OpenSans-ExtraBold",
-    marginBottom: 8,
-  },
-  divider: {
-    height: 6,
-    width: 180,
-    backgroundColor: "#ffcc00",
-    marginBottom: 20,
-  },
-  inputGroup: {
-    width: "90%",
-    backgroundColor: "#ffe789",
-    borderRadius: 100,
-    borderWidth: 5,
-    borderColor: "#e5b700",
-    padding: 12,
-    marginVertical: 8,
-    alignItems: "flex-start",
-  },
-  inputText: {
-    fontSize: 16,
-    color: "rgba(0,0,0,0.6)",
-    marginTop: 8,
-    fontFamily: "OpenSans-Bold",
-  },
-  dropdownIcon: {
-    position: "absolute",
-    right: 16,
-    top: 30,
-  },
-  dropdownArrow: {
-    position: "absolute",
-    right: 26,
-    top: 38,
-  },
-  cookiesContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 16,
-  },
-  cookiesText: {
-    color: "#fff",
-    fontSize: 18,
-    fontFamily: "OpenSans-Bold",
-    marginRight: 12,
-  },
-  toggle: {
-    backgroundColor: "#ffcc00",
-    width: 58,
-    height: 35,
-    borderRadius: 100,
-    justifyContent: "center",
-  },
-  knob: {
-    width: 27,
-    height: 27,
-    backgroundColor: "#fff",
-    borderRadius: 100,
-    alignSelf: "flex-end",
-    marginRight: 4,
-  },
+  cookiesContainer: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 16, width: "90%" },
+  cookiesText: { color: "#fff", fontSize: 18, fontFamily: "OpenSans-Bold" },
   confirmButton: {
-    backgroundColor: "#e5b800",
-    borderColor: "#ad8b06",
-    borderWidth: 5,
-    borderRadius: 100,
-    marginTop: 24,
-    width: 240,
-    padding: 12,
-    alignItems: "center",
+    backgroundColor: "#e5b800", borderColor: "#ad8b06", borderWidth: 5, borderRadius: 100, marginTop: 24,
+    width: 240, height: 55, justifyContent: "center", alignItems: "center"
   },
-  confirmText: {
+  confirmText: { color: "#fff", fontSize: 24, fontFamily: "OpenSans-Bold" },
+  loginLink: {
     color: "#fff",
-    fontSize: 24,
+    fontSize: 16,
+    textDecorationLine: "underline",
+    marginTop: 24,
     fontFamily: "OpenSans-Bold",
   },
-  loginContainer: {
-    marginTop: 16,
-    backgroundColor: "#ad8b06",
-    borderColor: "#6a5a1c",
-    borderWidth: 4,
-    borderRadius: 100,
-    width: 180,
-    padding: 10,
-    alignItems: "center",
-  },
-  loginText: {
-    color: "#6a5a1c",
-    fontSize: 20,
-    fontFamily: "OpenSans-ExtraBold",
-  },
+
+  loginText: { color: "#6a5a1c", fontSize: 20, fontFamily: "OpenSans-ExtraBold" },
 });
 
-export default REGISTER;
+export default RegisterScreen;
