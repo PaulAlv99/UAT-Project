@@ -1,40 +1,69 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, FlatList, StyleSheet, TouchableOpacity, Image, Alert, SafeAreaView
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  Alert,
+  SafeAreaView
 } from 'react-native';
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NavBar from '../components/Navbar';
+import { useTheme } from '../ThemeContext';
 
 const BuyRecipesScreen = () => {
   const [recipes, setRecipes] = useState([]);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [userId, setUserId] = useState('');
+  const { isDarkMode, toggleTheme } = useTheme();
 
   useEffect(() => {
-    fetchRecipes();
-    AsyncStorage.getItem('dark').then((d) => setIsDarkMode(d === 'true'));
+    fetchUserAndRecipes();
   }, []);
 
-  const fetchRecipes = async () => {
-    const token = await AsyncStorage.getItem('token');
-    const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/recipes`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const data = await res.json();
-    if (data.success) setRecipes(data.recipes || []);
+  const fetchUserAndRecipes = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+
+      // Get user info
+      const resUser = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const userData = await resUser.json();
+      if (!userData.success) throw new Error('User fetch failed');
+      setUserId(userData.user._id.toString());
+
+      // Get recipes
+      const resRecipes = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/recipes`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const recipeData = await resRecipes.json();
+      if (!recipeData.success) throw new Error('Recipes fetch failed');
+
+      // Filter out user's own recipes
+      const filtered = recipeData.recipes.filter(r => r.owner?.toString() !== userData.user._id.toString());
+      setRecipes(filtered);
+    } catch (err) {
+      Alert.alert("Error", err.message || "Could not load data.");
+    }
   };
 
-  const handleBuy = async (id) => {
-    const token = await AsyncStorage.getItem('token');
-    const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/recipes/${id}/buy`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const data = await res.json();
-    if (data.success) {
-      Alert.alert('Purchased!', 'Recipe added to your account.');
-    } else {
-      Alert.alert('Error', data.message);
+  const handleBuy = async (id: string) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/recipes/${id}/buy`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        Alert.alert('Purchased!', 'Recipe added to your account.');
+      } else {
+        Alert.alert('Error', data.message);
+      }
+    } catch (err) {
+      Alert.alert('Error', 'Could not complete purchase.');
     }
   };
 
@@ -42,7 +71,7 @@ const BuyRecipesScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <NavBar isDarkMode={isDarkMode} onToggleTheme={() => setIsDarkMode((prev) => !prev)} />
+      <NavBar isDarkMode={isDarkMode} onToggleTheme={toggleTheme} />
       <Text style={styles.title}>Explore Recipes</Text>
       <FlatList
         data={recipes}
@@ -63,29 +92,55 @@ const BuyRecipesScreen = () => {
   );
 };
 
-const getStyles = (dark) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: dark ? '#121212' : '#fff' },
-  title: {
-    fontSize: 28, fontWeight: 'bold', textAlign: 'center',
-    marginVertical: 16, color: dark ? '#fff' : '#333'
-  },
-  card: {
-    backgroundColor: dark ? '#1e1e1e' : '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 4
-  },
-  name: { fontSize: 20, fontWeight: '600', color: dark ? '#fff' : '#000' },
-  price: { fontSize: 16, color: dark ? '#aaa' : '#555', marginBottom: 8 },
-  image: { height: 150, width: '100%', borderRadius: 10, marginBottom: 10 },
-  button: {
-    backgroundColor: '#ff8c00', paddingVertical: 10, borderRadius: 100, alignItems: 'center'
-  },
-  buttonText: { color: '#fff', fontWeight: 'bold' }
-});
+const getStyles = (dark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: dark ? '#121212' : '#fff'
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      textAlign: 'center',
+      marginVertical: 16,
+      color: dark ? '#fff' : '#333'
+    },
+    card: {
+      backgroundColor: dark ? '#1e1e1e' : '#fff',
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 20,
+      shadowColor: '#000',
+      shadowOpacity: 0.2,
+      shadowRadius: 5,
+      elevation: 4
+    },
+    name: {
+      fontSize: 20,
+      fontWeight: '600',
+      color: dark ? '#fff' : '#000'
+    },
+    price: {
+      fontSize: 16,
+      color: dark ? '#aaa' : '#555',
+      marginBottom: 8
+    },
+    image: {
+      height: 150,
+      width: '100%',
+      borderRadius: 10,
+      marginBottom: 10
+    },
+    button: {
+      backgroundColor: '#ff8c00',
+      paddingVertical: 10,
+      borderRadius: 100,
+      alignItems: 'center'
+    },
+    buttonText: {
+      color: '#fff',
+      fontWeight: 'bold'
+    }
+  });
 
 export default BuyRecipesScreen;

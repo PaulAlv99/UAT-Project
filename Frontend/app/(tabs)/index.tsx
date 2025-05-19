@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-
+// TODO In every page needs to keep track if it's black or light mode passs context between them
 const HomeScreen = () => {
   const router = useRouter();
   const { width } = useWindowDimensions();

@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   SafeAreaView,
   View,
@@ -10,24 +9,22 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import NavBar from "../components/Navbar";
+import { useTheme } from "../ThemeContext";
 
 const LandingScreen = () => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const { isDarkMode, toggleTheme } = useTheme(); // 🌙 Global theme
   const router = useRouter();
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const token = await AsyncStorage.getItem("token");
-        const dark = await AsyncStorage.getItem("dark");
-        setIsDarkMode(dark === "true");
-
         if (!token) return router.replace("/(tabs)/login");
-        console.log(token);
 
         const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/me`, {
           headers: {
@@ -70,10 +67,7 @@ const LandingScreen = () => {
 
   return (
     <SafeAreaView style={themeStyles.container}>
-      <NavBar
-        isDarkMode={isDarkMode}
-        onToggleTheme={() => setIsDarkMode((prev) => !prev)}
-      />
+      <NavBar isDarkMode={isDarkMode} onToggleTheme={toggleTheme} />
       <ScrollView contentContainerStyle={themeStyles.scroll}>
         <View style={themeStyles.header}>
           <Text style={themeStyles.greeting}>Hello,</Text>
@@ -88,33 +82,13 @@ const LandingScreen = () => {
         </View>
 
         <View style={themeStyles.statsContainer}>
-          <Stat
-            label="Recipes Bought"
-            value={user?.bought ?? 0}
-            style={themeStyles}
-          />
-          <Stat
-            label="Recipes Sold"
-            value={user?.sold ?? 0}
-            style={themeStyles}
-          />
+          <Stat label="Recipes Bought" value={user?.bought ?? 0} style={themeStyles} />
+          <Stat label="Recipes Sold" value={user?.sold ?? 0} style={themeStyles} />
         </View>
 
-        <NavButton
-          label="Explore Recipes"
-          onPress={() => router.push("/(tabs)/BuyRecipesScreen")}
-          style={themeStyles}
-        />
-        <NavButton
-          label="Sell a Recipe"
-          onPress={() => router.push("/(tabs)/SellRecipeScreen")}
-          style={themeStyles}
-        />
-        <NavButton
-          label="My Recipes"
-          onPress={() => router.push("/(tabs)/MyRecipesScreen")}
-          style={themeStyles}
-        />
+        <NavButton label="Explore Recipes" onPress={() => router.push("/(tabs)/BuyRecipesScreen")} style={themeStyles} />
+        <NavButton label="Sell a Recipe" onPress={() => router.push("/(tabs)/SellRecipeScreen")} style={themeStyles} />
+        <NavButton label="My Recipes" onPress={() => router.push("/(tabs)/MyRecipesScreen")} style={themeStyles} />
 
         <TouchableOpacity style={themeStyles.logout} onPress={logout}>
           <Text style={themeStyles.logoutText}>Log Out</Text>
