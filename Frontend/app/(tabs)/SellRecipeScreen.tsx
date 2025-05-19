@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   TextInput,
@@ -7,19 +7,48 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
-  SafeAreaView
+  SafeAreaView,
+  Image
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
 import NavBar from '../components/Navbar';
-import { useTheme } from '../ThemeContext'; // ✅ import useTheme
+import { useTheme } from '../ThemeContext';
 
 const SellRecipeScreen = () => {
   const [name, setName] = useState('');
   const [ingredients, setIngredients] = useState('');
   const [steps, setSteps] = useState('');
   const [price, setPrice] = useState('');
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
+  const forSale=true;
+  const { isDarkMode, toggleTheme } = useTheme();
 
-  const { isDarkMode, toggleTheme } = useTheme(); // ✅ use context
+  useFocusEffect(
+     useCallback(() => {
+
+       return () => {
+         // On screen blur: reset form
+         setName('');
+         setIngredients('');
+         setSteps('');
+         setPrice('');
+         setImageBase64(null);
+       };
+     }, [])
+   );
+
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      base64: true,
+      quality: 0.5,
+    });
+
+    if (!result.canceled && result.assets && result.assets[0].base64) {
+      setImageBase64(`data:image/jpeg;base64,${result.assets[0].base64}`);
+    }
+  };
 
   const handleSubmit = async () => {
     try {
@@ -30,7 +59,14 @@ const SellRecipeScreen = () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ name, ingredients, steps, price })
+        body: JSON.stringify({
+          name,
+          ingredients,
+          steps,
+          price,
+          forSale,
+          image: imageBase64 // include image
+        })
       });
 
       const data = await res.json();
@@ -40,6 +76,7 @@ const SellRecipeScreen = () => {
         setIngredients('');
         setSteps('');
         setPrice('');
+        setImageBase64(null);
       } else {
         Alert.alert('Error', data.message || 'Could not submit recipe.');
       }
@@ -90,6 +127,17 @@ const SellRecipeScreen = () => {
           onChangeText={setPrice}
           keyboardType="numeric"
         />
+
+        {imageBase64 && (
+          <Image
+            source={{ uri: imageBase64 }}
+            style={{ width: '100%', height: 200, borderRadius: 10, marginBottom: 12 }}
+          />
+        )}
+
+        <TouchableOpacity style={[styles.button, { marginBottom: 10 }]} onPress={pickImage}>
+          <Text style={styles.buttonText}>Pick Image</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity style={styles.button} onPress={handleSubmit}>
           <Text style={styles.buttonText}>Submit</Text>

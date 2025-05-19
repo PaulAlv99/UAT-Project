@@ -43,6 +43,8 @@ export default function TabLayout() {
         <Tabs.Screen name="MyRecipesScreen" options={hiddenTab} />
         <Tabs.Screen name="BuyRecipesScreen" options={hiddenTab} />
         <Tabs.Screen name="SellRecipeScreen" options={hiddenTab} />
+        <Tabs.Screen name="HistoryScreen" options={hiddenTab} />
+
       </Tabs>
     </ThemeProvider>
   );

@@ -3,6 +3,9 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal } from "react-native";
 import { useRouter } from "expo-router";
 import Svg, { Path, G, Circle } from "react-native-svg";
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CommonActions, useNavigation } from '@react-navigation/native';
+
 const NavBar = ({ onToggleTheme, isDarkMode }: { onToggleTheme: () => void; isDarkMode: boolean }) => {
   const router = useRouter();
   const [menuVisible, setMenuVisible] = useState(false);
@@ -10,10 +13,19 @@ const NavBar = ({ onToggleTheme, isDarkMode }: { onToggleTheme: () => void; isDa
   const styles = getStyles(isDarkMode);
 
   const logout = async () => {
-      await AsyncStorage.removeItem("token");
-      setUser(null);
-      router.replace("/(tabs)/login");
-    };
+    try {
+      await AsyncStorage.clear();
+
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'LandingScreen' }],
+        })
+      );
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
+  };
   return (
     <View style={styles.navbar}>
       <TouchableOpacity onPress={() => { setMenuVisible(false); onToggleTheme(); }}>
@@ -60,11 +72,15 @@ const NavBar = ({ onToggleTheme, isDarkMode }: { onToggleTheme: () => void; isDa
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => { setMenuVisible(false); router.push("/(tabs)/BuyRecipesScreen"); }}>
-                          <Text style={styles.menuItem}>🛍️ Buy Recipes</Text>
+                <Text style={styles.menuItem}>🛍️ Buy Recipes</Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => { setMenuVisible(false); router.push("/(tabs)/SellRecipeScreen"); }}>
-                                      <Text style={styles.menuItem}>🛍️ Sell Recipes</Text>
+                <Text style={styles.menuItem}>🛍️ Sell Recipes</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => { setMenuVisible(false); router.push("/(tabs)/HistoryScreen"); }}>
+                <Text style={styles.menuItem}>🛍️ Recipes History</Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={(logout) => { setMenuVisible(false); router.replace("/(tabs)/login"); }}>

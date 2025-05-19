@@ -30,8 +30,7 @@ const LoginScreen = () => {
 
         await AsyncStorage.setItem("token", data.token);
         await AsyncStorage.setItem("dark", "false");
-        setEmail(null);
-        setPassword(null);
+
         router.push("/(tabs)/LandingScreen");
       } else {
         alert(data.message || "Login failed.");

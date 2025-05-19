@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,40 +12,34 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NavBar from '../components/Navbar';
 import { useTheme } from '../ThemeContext';
-
+import { useFocusEffect } from '@react-navigation/native';
 const BuyRecipesScreen = () => {
   const [recipes, setRecipes] = useState([]);
-  const [userId, setUserId] = useState('');
   const { isDarkMode, toggleTheme } = useTheme();
 
-  useEffect(() => {
-    fetchUserAndRecipes();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchMarketRecipes(); // Called every time the screen is focused
+      return () => {
+        // Optional cleanup if needed
+      };
+    }, []) // Empty dependency array is OK if fetchMarketRecipes is stable
+  );
 
-  const fetchUserAndRecipes = async () => {
+  const fetchMarketRecipes = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
 
-      // Get user info
-      const resUser = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/me`, {
+      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/recipes/market`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const userData = await resUser.json();
-      if (!userData.success) throw new Error('User fetch failed');
-      setUserId(userData.user._id.toString());
 
-      // Get recipes
-      const resRecipes = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/recipes`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const recipeData = await resRecipes.json();
-      if (!recipeData.success) throw new Error('Recipes fetch failed');
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || 'Failed to fetch recipes');
 
-      // Filter out user's own recipes
-      const filtered = recipeData.recipes.filter(r => r.owner?.toString() !== userData.user._id.toString());
-      setRecipes(filtered);
-    } catch (err) {
-      Alert.alert("Error", err.message || "Could not load data.");
+      setRecipes(data.recipes || []);
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Could not load recipes.');
     }
   };
 
@@ -59,6 +53,7 @@ const BuyRecipesScreen = () => {
       const data = await res.json();
       if (data.success) {
         Alert.alert('Purchased!', 'Recipe added to your account.');
+        fetchMarketRecipes(); // refresh list
       } else {
         Alert.alert('Error', data.message);
       }

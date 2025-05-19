@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,21 +12,40 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NavBar from '../components/Navbar';
 import { useTheme } from '../ThemeContext';
+import { useFocusEffect } from '@react-navigation/native';
 
 const MyRecipesScreen = () => {
   const [recipes, setRecipes] = useState([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const { isDarkMode, toggleTheme } = useTheme();
+  const [userId, setUserId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchMyRecipes();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchMyRecipes();
+      loadUser();
+      return () => {
+        setRecipes([]);
+        setExpandedId(null);
+      };
+    }, [])
+  );
 
+
+  const loadUser = async () => {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) return;
+      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) setUserId(data.user._id);
+  };
   const fetchMyRecipes = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/recipes/mine`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       if (data.success) setRecipes(data.recipes || []);
@@ -40,7 +59,7 @@ const MyRecipesScreen = () => {
       const token = await AsyncStorage.getItem('token');
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/recipes/${id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       if (data.success) {
@@ -57,6 +76,27 @@ const MyRecipesScreen = () => {
   const toggleDetails = (id: string) => {
     setExpandedId((prev) => (prev === id ? null : id));
   };
+
+  const handleToggleSale = async (id: string, status: boolean) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/recipes/${id}/toggle-sale`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ forSale: status })
+      });
+
+      const data = await res.json();
+      if (data.success) fetchMyRecipes();
+      else Alert.alert('Error', data.message);
+    } catch (err) {
+      Alert.alert('Error', 'Could not update sale status.');
+    }
+  };
+
 
   const styles = getStyles(isDarkMode);
 
@@ -85,10 +125,7 @@ const MyRecipesScreen = () => {
                 <Text style={{ color: '#888', marginVertical: 10 }}>No image</Text>
               )}
 
-              <TouchableOpacity
-                style={styles.detailBtn}
-                onPress={() => toggleDetails(item._id)}
-              >
+              <TouchableOpacity style={styles.detailBtn} onPress={() => toggleDetails(item._id)}>
                 <Text style={styles.detailText}>{expanded ? 'Hide Details' : 'Show Details'}</Text>
               </TouchableOpacity>
 
@@ -105,6 +142,18 @@ const MyRecipesScreen = () => {
               <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item._id)}>
                 <Text style={styles.deleteText}>Delete</Text>
               </TouchableOpacity>
+              {userId === item.owner?._id && (
+                <TouchableOpacity
+                  style={styles.toggleBtn}
+                  onPress={() => handleToggleSale(item._id, !item.forSale)}
+                >
+                  <Text style={styles.toggleText}>
+                    {item.forSale ? 'Disable Sale' : 'Enable Sale'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+
             </View>
           );
         }}
@@ -172,6 +221,19 @@ const getStyles = (dark: boolean) =>
       color: dark ? '#ddd' : '#555',
       marginTop: 2,
     },
+    toggleBtn: {
+        backgroundColor: '#007bff', // Blue for enabling
+        padding: 10,
+        borderRadius: 8,
+        marginTop: 10,
+        alignItems: 'center',
+    },
+
+    toggleText: {
+        color: '#fff',
+        fontWeight: 'bold',
+    }
+
   });
 
 export default MyRecipesScreen;
