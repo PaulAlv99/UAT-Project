@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   SafeAreaView,
   View,
@@ -13,41 +13,45 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import NavBar from "../components/Navbar";
 import { useTheme } from "../ThemeContext";
+import { useFocusEffect } from "@react-navigation/native";
 
 const LandingScreen = () => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const { isDarkMode, toggleTheme } = useTheme(); // 🌙 Global theme
+  const { isDarkMode, toggleTheme } = useTheme();
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const token = await AsyncStorage.getItem("token");
-        if (!token) return router.replace("/(tabs)/login");
+  const fetchUser = useCallback(async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) return router.replace("/(tabs)/login");
 
-        const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-        const data = await res.json();
-        if (data.success) {
-          setUser(data.user);
-        } else {
-          router.replace("/(tabs)/login");
-        }
-      } catch (err) {
-        Alert.alert("Error", "Unable to load user.");
+      const data = await res.json();
+      if (data.success) {
+        setUser(data.user);
+      } else {
         router.replace("/(tabs)/login");
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (err) {
+      Alert.alert("Error", "Unable to load user.");
+      router.replace("/(tabs)/login");
+    } finally {
+      setLoading(false);
+    }
+  }, [router]);
 
-    fetchUser();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      fetchUser();
+    }, [fetchUser])
+  );
 
   const logout = async () => {
     await AsyncStorage.removeItem("token");
@@ -82,8 +86,8 @@ const LandingScreen = () => {
         </View>
 
         <View style={themeStyles.statsContainer}>
-          <Stat label="Recipes Bought" value={user?.bought ?? 0} style={themeStyles} />
-          <Stat label="Recipes Sold" value={user?.sold ?? 0} style={themeStyles} />
+          <Stat label="Recipes Bought" value={user?.bought?.length ?? 0} style={themeStyles} />
+          <Stat label="Recipes Sold" value={user?.sold?.length ?? 0} style={themeStyles} />
         </View>
 
         <NavButton label="Explore Recipes" onPress={() => router.push("/(tabs)/BuyRecipesScreen")} style={themeStyles} />
