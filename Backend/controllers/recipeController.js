@@ -18,7 +18,8 @@ exports.getMarketRecipes = async (req, res) => {
     const recipes = await Recipe.find({
       owner: { $ne: myId },
       buyers: { $not: { $elemMatch: { $eq: myId } } },
-      forSale: true
+      forSale: true,
+      hidden: false,
     }).populate('owner', 'name');
 
     res.json({ success: true, recipes });
@@ -36,7 +37,8 @@ exports.getMyRecipes = async (req, res) => {
       $or: [
         { owner: myId },
         { buyers: myId }
-      ]
+      ],
+      hidden: false
     }).populate('owner', 'name');
 
     res.json({ success: true, recipes });
@@ -45,6 +47,9 @@ exports.getMyRecipes = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
+
+
+
 
 
 exports.createRecipe = async (req, res) => {
@@ -115,15 +120,22 @@ exports.buyRecipe = async (req, res) => {
 exports.deleteRecipe = async (req, res) => {
   try {
     const recipe = await Recipe.findById(req.params.id);
-    if (!recipe) return res.status(404).json({ success: false, message: 'Recipe not found.' });
-    if (!recipe.owner.equals(req.user._id)) return res.status(403).json({ success: false, message: 'Unauthorized.' });
+    if (!recipe)
+      return res.status(404).json({ success: false, message: 'Recipe not found.' });
 
-    await recipe.deleteOne();
-    res.json({ success: true, message: 'Recipe deleted.' });
+    if (!recipe.owner.equals(req.user._id))
+      return res.status(403).json({ success: false, message: 'Unauthorized, not the owner.' });
+
+    recipe.hidden = true;
+    await recipe.save();
+
+    res.json({ success: true, message: 'Recipe hidden (soft-deleted).' });
   } catch (err) {
+    console.error("deleteRecipe error:", err);
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
+
 
 exports.toggleSaleStatus = async (req, res) => {
   try {

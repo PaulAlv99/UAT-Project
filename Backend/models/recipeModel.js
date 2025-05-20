@@ -10,6 +10,7 @@ const recipeSchema = new mongoose.Schema({
   buyers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   salesCount: { type: Number, default: 0 },
   forSale: { type: Boolean, default: true },
+  hidden: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
 
