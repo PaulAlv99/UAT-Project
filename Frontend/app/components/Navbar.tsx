@@ -86,6 +86,9 @@ const NavBar = ({ onToggleTheme, isDarkMode }: { onToggleTheme: () => void; isDa
             <TouchableOpacity onPress={(logout) => { setMenuVisible(false); router.replace("/(tabs)/login"); }}>
               <Text style={styles.menuItem}>🚪 Logout</Text>
             </TouchableOpacity>
+            <TouchableOpacity onPress={() => { setMenuVisible(false); router.replace("/(tabs)/GroceryMap"); }}>
+                          <Text style={styles.menuItem}>Groceries nearby</Text>
+            </TouchableOpacity>
           </View>
         </TouchableOpacity>
       </Modal>
