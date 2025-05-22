@@ -1,3 +1,4 @@
+// GroceryMap.tsx
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -13,6 +14,8 @@ import MapView, { Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import NavBar from '../components/Navbar';
 import { useTheme } from '../ThemeContext';
+
+const GOOGLE_API = `${process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY}`;
 
 const GroceryMap = () => {
   const [region, setRegion] = useState<Region | null>(null);
@@ -40,11 +43,7 @@ const GroceryMap = () => {
         };
 
         setRegion(regionData);
-
-        if (Platform.OS === 'android') {
-          await fetchNearbyGroceries(latitude, longitude);
-        }
-
+        await fetchNearbyGroceries(latitude, longitude);
         setLoading(false);
       } catch (err) {
         Alert.alert('Error', 'Unable to load location.');
@@ -55,17 +54,32 @@ const GroceryMap = () => {
 
   const fetchNearbyGroceries = async (lat: number, lng: number) => {
     try {
-      const key = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
-      const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=1500&type=supermarket&key=${key}`;
-      console.log("📡 Request URL:", url);
 
-      const response = await fetch(url);
+      console.log(GOOGLE_API);
+      const response = await fetch('https://places.googleapis.com/v1/places:searchNearby', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': GOOGLE_API,
+          'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.location',
+        },
+        body: JSON.stringify({
+          includedTypes: ['supermarket'],
+          maxResultCount: 20,
+          locationRestriction: {
+            circle: {
+              center: { latitude: lat, longitude: lng },
+              radius: 1500.0,
+            },
+          },
+        }),
+      });
+
       const data = await response.json();
-
-      console.log("✅ Google Maps API Response:", JSON.stringify(data, null, 2));
-      setStores(data.results || []);
+      console.log('✅ Nearby places:', JSON.stringify(data, null, 2));
+      setStores(data.places || []);
     } catch (err) {
-      console.error("❌ Error fetching groceries:", err);
+      console.error('❌ Error fetching places:', err);
       Alert.alert('Error', 'Failed to load nearby stores.');
     }
   };
@@ -83,19 +97,21 @@ const GroceryMap = () => {
     <SafeAreaView style={styles.container}>
       <NavBar isDarkMode={isDarkMode} onToggleTheme={toggleTheme} />
       <MapView style={styles.map} region={region}>
-        <Marker coordinate={{ latitude: region.latitude, longitude: region.longitude }} title="You" />
-        {1===1 &&
-          stores.map((store, idx) => (
-            <Marker
-              key={idx}
-              coordinate={{
-                latitude: store.geometry.location.lat,
-                longitude: store.geometry.location.lng,
-              }}
-              title={store.name}
-              description={store.vicinity}
-            />
-          ))}
+        <Marker
+          coordinate={{ latitude: region.latitude, longitude: region.longitude }}
+          title="You"
+        />
+        {stores.map((place, idx) => (
+          <Marker
+            key={idx}
+            coordinate={{
+              latitude: place.location.latitude,
+              longitude: place.location.longitude,
+            }}
+            title={place.displayName?.text}
+            description={place.formattedAddress}
+          />
+        ))}
       </MapView>
     </SafeAreaView>
   );
@@ -106,7 +122,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   map: {
-    height: '70%', // 🔽 Map takes only 70% of screen height
+    height: '70%',
     width: '100%',
   },
   loadingContainer: {
