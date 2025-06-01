@@ -12,10 +12,10 @@ passport.use(new JwtStrategy(options, async (payload, done) => {
     const user = await User.findById(payload.id).select('-password');
 
     if (user){
-    console.log("user autenticado pelo passport");
+    console.log("user auth by passport");
     return done(null, user);
     }
-    console.log("user nao autenticado pelo passport");
+    console.log("user not auth by passport");
     return done(null, false);
   } catch (err) {
     return done(err, false);

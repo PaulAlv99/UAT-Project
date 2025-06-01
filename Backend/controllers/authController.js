@@ -13,8 +13,8 @@ const createToken = (user) => {
 };
 
 exports.register = async (req, res) => {
-  const { name, email, password, preference } = req.body;
-  if (!name || !email || !password || !preference) {
+  const { name, email, password, preference, recoveryPhrase, profileImage} = req.body;
+  if (!name || !email || !password || !preference || !recoveryPhrase || !profileImage ) {
     return res.status(400).json({ success: false, message: "All fields are required." });
   }
 
@@ -24,10 +24,9 @@ exports.register = async (req, res) => {
       return res.status(409).json({ success: false, message: "Email already registered." });
     }
 
-    const newUser = new User({ name, email, password, preference });
+    const newUser = new User({ name, email, password, preference, recoveryPhrase, profileImage });
     await newUser.save();
 
-    // ✅ Create default recipes for this user
     const defaultRecipes = [
           {
             name: "Spaghetti Bolognese",
@@ -83,20 +82,42 @@ exports.login = async (req, res) => {
 };
 
 exports.recoverPassword = async (req, res) => {
-  const { email, username } = req.body;
-  if (!email || !username) {
-    return res.status(400).json({ success: false, message: "Email and username are required." });
+  const { email, recoveryPhrase } = req.body;
+
+  if (!email || !recoveryPhrase) {
+    return res.status(400).json({ success: false, message: "Email and recovery phrase are required." });
   }
 
   try {
-    const user = await User.findOne({ email, name: username });
+    const user = await User.findOne({ email, recoveryPhrase });
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found." });
+      return res.status(404).json({ success: false, message: "User not found or recovery phrase incorrect." });
     }
 
-    return res.status(200).json({ success: true, message: "Recovery instructions sent to your email." });
+    return res.status(200).json({ success: true, message: "Recovery validated. You may now reset your password." });
   } catch (err) {
     console.error("RecoverPassword error:", err);
     return res.status(500).json({ success: false, message: "Server error." });
   }
 };
+
+exports.resetPassword = async (req, res) => {
+  const { email, newPassword } = req.body;
+  if (!email || !newPassword) {
+    return res.status(400).json({ success: false, message: "Email and new password are required." });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ success: false, message: "User not found." });
+
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({ success: true, message: "Password reset successfully." });
+  } catch (err) {
+    console.error("ResetPassword error:", err);
+    res.status(500).json({ success: false, message: "Server error." });
+  }
+};
+

@@ -2,13 +2,14 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
 const userSchema = new mongoose.Schema({
-  name: String,
+  name: { type: String, unique: true },
   email: { type: String, unique: true },
   password: String,
   preference: String,
-  credits: { type: Number, default: 10 }, // 💰 Starting credits
+  recoveryPhrase: String,
+  profileImage: String,
 
-  // ✅ Add these two arrays to track purchased and sold recipes
+  credits: { type: Number, default: 10 },
   bought: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Recipe' }],
   sold: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Recipe' }]
 }, { timestamps: true });
