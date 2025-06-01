@@ -1,32 +1,36 @@
 import * as React from "react";
 import {
-  StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView
+  StyleSheet,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 
 const ForgotPasswordScreen = () => {
   const [email, setEmail] = React.useState('');
-  const [username, setUsername] = React.useState('');
   const [recoveryPhrase, setRecoveryPhrase] = React.useState('');
   const router = useRouter();
 
   const handleRecover = () => {
-    if (!username.trim() || !email.trim() || !recoveryPhrase.trim()) {
-      alert("Please fill in all fields.");
+    if (!email.trim() || !recoveryPhrase.trim()) {
+      alert("Please fill in both fields.");
       return;
     }
 
     fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/recover-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, username, recoveryPhrase })
+      body: JSON.stringify({ email, recoveryPhrase }),
     })
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          alert("Recovery verified. You may reset your password.");
-          router.push("/reset-password"); // Go to the reset page
+          alert("Recovery verified. You can now reset your password.");
+          router.push({ pathname: "/reset-password", params: { email } });
         } else {
           alert(data.message || "Recovery failed.");
         }
@@ -40,13 +44,6 @@ const ForgotPasswordScreen = () => {
         <Text style={styles.title}>RECOVER ACCOUNT</Text>
         <View style={styles.divider} />
 
-        <TextInput
-          style={styles.input}
-          placeholder="USERNAME"
-          placeholderTextColor="#8b0003"
-          value={username}
-          onChangeText={setUsername}
-        />
         <TextInput
           style={styles.input}
           placeholder="EMAIL"
@@ -67,7 +64,7 @@ const ForgotPasswordScreen = () => {
           <Text style={styles.confirmText}>CONFIRM</Text>
         </TouchableOpacity>
 
-        <Text style={styles.homeLink} onPress={() => router.push("/(tabs)/login")}>
+        <Text style={styles.homeLink} onPress={() => router.push("/(tabs)/LandingScreen")}>
           Back to Home
         </Text>
       </ScrollView>
@@ -79,31 +76,54 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f85457" },
   scroll: { alignItems: "center", padding: 20 },
   title: {
-    fontSize: 40, fontFamily: "OpenSans-ExtraBold", color: "#fff",
-    marginBottom: 8, textAlign: "center"
+    fontSize: 40,
+    fontFamily: "OpenSans-ExtraBold",
+    color: "#fff",
+    marginBottom: 8,
+    textAlign: "center",
   },
   divider: {
-    height: 6, width: 180, backgroundColor: "#ec0105",
-    marginBottom: 20
+    height: 6,
+    width: 180,
+    backgroundColor: "#ec0105",
+    marginBottom: 20,
   },
   input: {
-    width: "90%", backgroundColor: "#fff", borderRadius: 100,
-    borderWidth: 5, borderColor: "#ffcbcc", paddingHorizontal: 20,
-    paddingVertical: 14, fontSize: 16, color: "#8b0003", fontFamily: "OpenSans-Bold",
-    marginVertical: 10
+    width: "90%",
+    backgroundColor: "#fff",
+    borderRadius: 100,
+    borderWidth: 5,
+    borderColor: "#ffcbcc",
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: "#8b0003",
+    fontFamily: "OpenSans-Bold",
+    marginVertical: 10,
   },
   confirmButton: {
-    backgroundColor: "#ec0105", borderColor: "#a30003",
-    borderWidth: 5, borderRadius: 100, width: 240, height: 55,
-    justifyContent: "center", alignItems: "center", marginTop: 20
+    backgroundColor: "#ec0105",
+    borderColor: "#a30003",
+    borderWidth: 5,
+    borderRadius: 100,
+    width: 240,
+    height: 55,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 20,
   },
   confirmText: {
-    color: "#fff", fontSize: 24, fontFamily: "OpenSans-Bold"
+    color: "#fff",
+    fontSize: 24,
+    fontFamily: "OpenSans-Bold",
   },
   homeLink: {
-    color: "#fff", marginTop: 30, fontSize: 16,
-    textDecorationLine: "underline", fontFamily: "OpenSans-Bold"
-  }
+    color: "#fff",
+    marginTop: 30,
+    fontSize: 16,
+    textDecorationLine: "underline",
+    fontFamily: "OpenSans-Bold",
+  },
 });
 
 export default ForgotPasswordScreen;

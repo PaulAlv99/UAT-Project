@@ -45,6 +45,10 @@ export default function TabLayout() {
         <Tabs.Screen name="SellRecipeScreen" options={hiddenTab} />
         <Tabs.Screen name="HistoryScreen" options={hiddenTab} />
         <Tabs.Screen name="GroceryMap" options={hiddenTab} />
+        <Tabs.Screen name="reset-password" options={hiddenTab} />
+        <Tabs.Screen name="UpdateProfileScreen" options={hiddenTab} />
+        <Tabs.Screen name="ForgotPasswordScreen" options={hiddenTab} />
+        <Tabs.Screen name="ChatScreen" options={hiddenTab} />
       </Tabs>
     </ThemeProvider>
   );

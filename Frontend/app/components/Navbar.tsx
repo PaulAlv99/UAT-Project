@@ -64,31 +64,34 @@ const NavBar = ({ onToggleTheme, isDarkMode }: { onToggleTheme: () => void; isDa
         <TouchableOpacity style={styles.overlay} onPress={() => setMenuVisible(false)}>
           <View style={styles.dropdown}>
             <TouchableOpacity onPress={() => { setMenuVisible(false); router.push("/(tabs)/LandingScreen"); }}>
-              <Text style={styles.menuItem}>👤 Profile</Text>
+              <Text style={styles.menuItem}>Profile</Text>
             </TouchableOpacity>
-
             <TouchableOpacity onPress={() => { setMenuVisible(false); router.push("/(tabs)/MyRecipesScreen"); }}>
-              <Text style={styles.menuItem}>🛍️ My Recipes</Text>
+              <Text style={styles.menuItem}>My Recipes</Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => { setMenuVisible(false); router.push("/(tabs)/BuyRecipesScreen"); }}>
-                <Text style={styles.menuItem}>🛍️ Buy Recipes</Text>
+                <Text style={styles.menuItem}>Buy Recipes</Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => { setMenuVisible(false); router.push("/(tabs)/SellRecipeScreen"); }}>
-                <Text style={styles.menuItem}>🛍️ Sell Recipes</Text>
+                <Text style={styles.menuItem}>Sell Recipes</Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => { setMenuVisible(false); router.push("/(tabs)/HistoryScreen"); }}>
-                <Text style={styles.menuItem}>🛍️ Recipes History</Text>
+                <Text style={styles.menuItem}>Recipes History</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity onPress={(logout) => { setMenuVisible(false); router.replace("/(tabs)/login"); }}>
-              <Text style={styles.menuItem}>🚪 Logout</Text>
+            <TouchableOpacity onPress={() => { setMenuVisible(false); router.replace("/(tabs)/ChatScreen"); }}>
+                                                  <Text style={styles.menuItem}>Chat with others</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => { setMenuVisible(false); router.replace("/(tabs)/GroceryMap"); }}>
                           <Text style={styles.menuItem}>Groceries nearby</Text>
             </TouchableOpacity>
+            <TouchableOpacity onPress={(logout) => { setMenuVisible(false); router.replace("/(tabs)/login"); }}>
+              <Text style={styles.menuItem}>Logout</Text>
+            </TouchableOpacity>
+
+
           </View>
         </TouchableOpacity>
       </Modal>

@@ -1,52 +1,52 @@
-import * as React from "react";
+import React, { useState } from "react";
 import {
-  StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView
+  StyleSheet,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Alert
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 
-const ForgotPasswordScreen = () => {
-  const [email, setEmail] = React.useState('');
-  const [username, setUsername] = React.useState('');
-  const [recoveryPhrase, setRecoveryPhrase] = React.useState('');
+const ResetPasswordScreen = () => {
   const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
-  const handleRecover = () => {
-    if (!username.trim() || !email.trim() || !recoveryPhrase.trim()) {
-      alert("Please fill in all fields.");
-      return;
-    }
+  const handleReset = () => {
+    if (!email.trim()) return alert("Email is required.");
+    if (!newPassword.trim() || newPassword.length < 6)
+      return alert("Password must be at least 6 characters.");
+    if (newPassword !== confirmPassword)
+      return alert("Passwords do not match.");
 
-    fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/recover-password`, {
+    fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/reset-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, username, recoveryPhrase })
+      body: JSON.stringify({ email, newPassword })
     })
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          alert("Recovery verified. You may reset your password.");
-          router.push("/reset-password"); // Go to the reset page
+          Alert.alert("Success", "Password reset successfully.");
+          router.push("/(tabs)/login");
         } else {
-          alert(data.message || "Recovery failed.");
+          Alert.alert("Error", data.message || "Password reset failed.");
         }
       })
-      .catch(() => alert("Server error. Try again later."));
+      .catch(() => Alert.alert("Error", "Server error. Try again later."));
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={styles.title}>RECOVER ACCOUNT</Text>
+        <Text style={styles.title}>RESET PASSWORD</Text>
         <View style={styles.divider} />
 
-        <TextInput
-          style={styles.input}
-          placeholder="USERNAME"
-          placeholderTextColor="#8b0003"
-          value={username}
-          onChangeText={setUsername}
-        />
         <TextInput
           style={styles.input}
           placeholder="EMAIL"
@@ -55,19 +55,30 @@ const ForgotPasswordScreen = () => {
           onChangeText={setEmail}
           keyboardType="email-address"
         />
+
         <TextInput
           style={styles.input}
-          placeholder="RECOVERY PHRASE"
+          placeholder="NEW PASSWORD"
           placeholderTextColor="#8b0003"
-          value={recoveryPhrase}
-          onChangeText={setRecoveryPhrase}
+          secureTextEntry
+          value={newPassword}
+          onChangeText={setNewPassword}
         />
 
-        <TouchableOpacity style={styles.confirmButton} onPress={handleRecover}>
-          <Text style={styles.confirmText}>CONFIRM</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="CONFIRM PASSWORD"
+          placeholderTextColor="#8b0003"
+          secureTextEntry
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+        />
+
+        <TouchableOpacity style={styles.confirmButton} onPress={handleReset}>
+          <Text style={styles.confirmText}>RESET</Text>
         </TouchableOpacity>
 
-        <Text style={styles.homeLink} onPress={() => router.push("/(tabs)/login")}>
+        <Text style={styles.homeLink} onPress={() => router.push("/(tabs)/index")}>
           Back to Home
         </Text>
       </ScrollView>
@@ -106,4 +117,4 @@ const styles = StyleSheet.create({
   }
 });
 
-export default ForgotPasswordScreen;
+export default ResetPasswordScreen;

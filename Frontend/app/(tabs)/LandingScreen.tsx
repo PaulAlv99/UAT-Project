@@ -8,12 +8,20 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Image,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import NavBar from "../components/Navbar";
 import { useTheme } from "../ThemeContext";
 import { useFocusEffect } from "@react-navigation/native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
 
 const LandingScreen = () => {
   const [user, setUser] = useState<any>(null);
@@ -21,81 +29,122 @@ const LandingScreen = () => {
   const { isDarkMode, toggleTheme } = useTheme();
   const router = useRouter();
 
+  const glow = useSharedValue(1);
+
+  const glowStyle = useAnimatedStyle(() => {
+      return {
+        transform: [{ scale: glow.value }],
+        shadowColor: "#ffd700",
+        shadowOpacity: 0.7,
+        shadowRadius: 10 * glow.value,
+
+      };
+  });
+
+  const animateGlow = () => {
+    glow.value = withRepeat(
+      withTiming(1.1, {
+        duration: 1000,
+        easing: Easing.inOut(Easing.ease),
+      }),
+      -1,
+      true
+    );
+  };
+
   const fetchUser = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem("token");
       if (!token) return router.replace("/(tabs)/login");
 
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/me`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       const data = await res.json();
       if (data.success) {
         setUser(data.user);
+        await AsyncStorage.setItem("user", JSON.stringify(data.user));
       } else {
+        await AsyncStorage.multiRemove(["token", "user"]); // clear invalid session
         router.replace("/(tabs)/login");
       }
     } catch (err) {
       Alert.alert("Error", "Unable to load user.");
+      await AsyncStorage.multiRemove(["token", "user"]); // ensure clean fallback
       router.replace("/(tabs)/login");
     } finally {
       setLoading(false);
     }
   }, [router]);
 
+
   useFocusEffect(
     useCallback(() => {
       setLoading(true);
       fetchUser();
+      animateGlow();
     }, [fetchUser])
   );
 
   const logout = async () => {
-    await AsyncStorage.removeItem("token");
+    await AsyncStorage.multiRemove(["token", "user"]);
     setUser(null);
     router.replace("/(tabs)/login");
   };
 
-  const themeStyles = getThemeStyles(isDarkMode);
+  const styles = getThemeStyles(isDarkMode);
 
   if (loading) {
     return (
-      <SafeAreaView style={themeStyles.centered}>
+      <SafeAreaView style={styles.centered}>
         <ActivityIndicator size="large" color="#ff8c00" />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={themeStyles.container}>
+    <SafeAreaView style={styles.container}>
       <NavBar isDarkMode={isDarkMode} onToggleTheme={toggleTheme} />
-      <ScrollView contentContainerStyle={themeStyles.scroll}>
-        <View style={themeStyles.header}>
-          <Text style={themeStyles.greeting}>Hello,</Text>
-          <Text style={themeStyles.name}>{user?.name ?? "User"}</Text>
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <View style={styles.header}>
+          <Text style={styles.greeting}>Hello,</Text>
+          <Text style={styles.name}>{user?.name ?? "User"}</Text>
         </View>
 
-        <View style={themeStyles.creditsCard}>
-          <Text style={themeStyles.creditsTitle}>Your Balance</Text>
-          <Text style={themeStyles.creditsAmount}>
-            {user?.credits ?? 0} credits
+        {user?.profileImage ? (
+          <View style={styles.imageWrapper}>
+            <Animated.View style={glowStyle}>
+              <Image
+                source={{ uri: `data:image/jpeg;base64,${user.profileImage}` }}
+                style={styles.imagePreview}
+              />
+            </Animated.View>
+          </View>
+
+        ) : (
+          <Text style={{ marginBottom: 20, color: isDarkMode ? "#ccc" : "#555" }}>
+            No profile image uploaded.
           </Text>
+        )}
+
+        <View style={styles.creditsCard}>
+          <Text style={styles.creditsTitle}>Your Balance</Text>
+          <Text style={styles.creditsAmount}>{user?.credits ?? 0} credits</Text>
         </View>
 
-        <View style={themeStyles.statsContainer}>
-          <Stat label="Recipes Bought" value={user?.bought?.length ?? 0} style={themeStyles} />
-          <Stat label="Recipes Sold" value={user?.sold?.length ?? 0} style={themeStyles} />
+        <View style={styles.statsContainer}>
+          <Stat label="Recipes Bought" value={user?.bought?.length ?? 0} style={styles} />
+          <Stat label="Recipes Sold" value={user?.sold?.length ?? 0} style={styles} />
         </View>
 
-        <NavButton label="Explore Recipes" onPress={() => router.push("/(tabs)/BuyRecipesScreen")} style={themeStyles} />
-        <NavButton label="Sell a Recipe" onPress={() => router.push("/(tabs)/SellRecipeScreen")} style={themeStyles} />
-        <NavButton label="My Recipes" onPress={() => router.push("/(tabs)/MyRecipesScreen")} style={themeStyles} />
+        <NavButton label="Update Profile" onPress={() => router.push("/(tabs)/UpdateProfileScreen")} style={styles} />
+        <NavButton label="Explore Recipes" onPress={() => router.push("/(tabs)/BuyRecipesScreen")} style={styles} />
+        <NavButton label="Sell a Recipe" onPress={() => router.push("/(tabs)/SellRecipeScreen")} style={styles} />
+        <NavButton label="My Recipes" onPress={() => router.push("/(tabs)/MyRecipesScreen")} style={styles} />
 
-        <TouchableOpacity style={themeStyles.logout} onPress={logout}>
-          <Text style={themeStyles.logoutText}>Log Out</Text>
+        <TouchableOpacity style={styles.logout} onPress={logout}>
+          <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -143,6 +192,15 @@ const getThemeStyles = (isDark: boolean) =>
       fontWeight: "700",
       color: isDark ? "#fff" : "#333",
     },
+    imagePreview: {
+      width: 140,
+      height: 140,
+      borderRadius: 70,
+      marginBottom: 20,
+      borderWidth: 3,
+      borderColor: isDark ? "#666" : "#e5b700",
+      backgroundColor: isDark ? "#333" : "#ffe789",
+    },
     creditsCard: {
       backgroundColor: isDark ? "#2a2a2a" : "#fff5d0",
       borderColor: isDark ? "#666" : "#ffd700",
@@ -157,6 +215,11 @@ const getThemeStyles = (isDark: boolean) =>
       fontSize: 18,
       color: isDark ? "#ddd28e" : "#8b6f00",
       marginBottom: 4,
+    },
+    imageWrapper: {
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 20,
     },
     creditsAmount: {
       fontSize: 28,
