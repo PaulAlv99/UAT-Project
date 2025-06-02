@@ -43,7 +43,7 @@ const LandingScreen = () => {
 
   const animateGlow = () => {
     glow.value = withRepeat(
-      withTiming(1.1, {
+      withTiming(1.2, {
         duration: 1000,
         easing: Easing.inOut(Easing.ease),
       }),

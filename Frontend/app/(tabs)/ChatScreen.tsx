@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   View, Text, FlatList, StyleSheet, TouchableOpacity, Image,
   SafeAreaView, TextInput, KeyboardAvoidingView, Platform
@@ -7,12 +7,11 @@ import io from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../ThemeContext';
 import NavBar from '../components/Navbar';
-import { useIsFocused } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
+
 const socket = io(`${process.env.EXPO_PUBLIC_SOCKET_URL}`, { autoConnect: false });
 
 const ChatScreen = () => {
-
-  const isFocused = useIsFocused();
   const [users, setUsers] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [selectedUser, setSelectedUser] = useState(null);
@@ -23,67 +22,68 @@ const ChatScreen = () => {
   const { isDarkMode, toggleTheme } = useTheme();
   const styles = getStyles(isDarkMode);
 
-  useEffect(() => {
-    let isMounted = true;
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+      let token = null;
 
-    const init = async () => {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) return;
+      const init = async () => {
+        token = await AsyncStorage.getItem('token');
+        if (!token) return;
 
-      const meRes = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const meData = await meRes.json();
-
-      if (meData.success && isMounted) {
-        const user = meData.user;
-        setUserId(user._id);
-        socket.auth = { token };
-        socket.connect();
-        socket.emit('join', user._id);
-      }
-
-      const usersRes = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/all`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const usersData = await usersRes.json();
-      if (isMounted) {
-        setUsers(usersData.users);
-      }
-    };
-
-    init();
-
-    const handleReceiveMessage = (msg) => {
-      if (
-        selectedUser &&
-        ((msg.senderId === selectedUser._id && msg.receiverId === userId) ||
-          (msg.senderId === userId && msg.receiverId === selectedUser._id))
-      ) {
-        setMessages(prev => {
-          const last = prev[prev.length - 1];
-          if (last && last.timestamp === msg.timestamp && last.message === msg.message) return prev;
-          return [...prev, {
-            ...msg,
-            incoming: msg.senderId !== userId
-          }];
+        const meRes = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/me`, {
+          headers: { Authorization: `Bearer ${token}` },
         });
-      }
-    };
+        const meData = await meRes.json();
 
-    socket.on('onlineUsers', (userIds) => {
-      if (isMounted) setOnlineUsers(new Set(userIds));
-    });
+        if (meData.success && isMounted) {
+          const user = meData.user;
+          setUserId(user._id);
+          socket.auth = { token };
+          socket.connect();
+          socket.emit('join', user._id);
+        }
 
-    socket.on('receiveMessage', handleReceiveMessage);
+        const usersRes = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/all`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const usersData = await usersRes.json();
+        if (isMounted) {
+          setUsers(usersData.users);
+        }
+      };
 
-    return () => {
-      isMounted = false;
-      socket.off('onlineUsers');
-      socket.off('receiveMessage', handleReceiveMessage);
-      socket.disconnect();
-    };
-  }, [selectedUser]);
+      const handleReceiveMessage = (msg) => {
+        if (
+          selectedUser &&
+          ((msg.senderId === selectedUser._id && msg.receiverId === userId) ||
+            (msg.senderId === userId && msg.receiverId === selectedUser._id))
+        ) {
+          setMessages(prev => {
+            const last = prev[prev.length - 1];
+            if (last && last.timestamp === msg.timestamp && last.message === msg.message) return prev;
+            return [...prev, {
+              ...msg,
+              incoming: msg.senderId !== userId
+            }];
+          });
+        }
+      };
+
+      init();
+      socket.on('onlineUsers', (userIds) => {
+        if (isMounted) setOnlineUsers(new Set(userIds));
+      });
+      socket.on('receiveMessage', handleReceiveMessage);
+
+      return () => {
+        isMounted = false;
+        socket.off('onlineUsers');
+        socket.off('receiveMessage', handleReceiveMessage);
+        socket.disconnect();
+      };
+    }, [selectedUser, userId])
+  );
 
   const handleSend = () => {
     if (!message.trim() || !selectedUser) return;
@@ -107,7 +107,7 @@ const ChatScreen = () => {
         style={[styles.userCard, selectedUser?._id === item._id && styles.selectedCard]}
         onPress={async () => {
           setSelectedUser(item);
-          setMessages([]); // clear while loading
+          setMessages([]);
 
           try {
             const token = await AsyncStorage.getItem('token');
@@ -127,7 +127,6 @@ const ChatScreen = () => {
             console.error('Error loading messages:', error);
           }
         }}
-
       >
         {item.profileImage ? (
           <Image source={{ uri: `data:image/jpeg;base64,${item.profileImage}` }} style={styles.avatar} />
@@ -138,7 +137,9 @@ const ChatScreen = () => {
         )}
         <View style={styles.userInfo}>
           <Text style={styles.username}>{item.username}</Text>
-          <Text style={[styles.status, { color: isOnline ? 'limegreen' : 'gray' }]}> {isOnline ? 'Online' : 'Offline'}</Text>
+          <Text style={[styles.status, { color: isOnline ? 'limegreen' : 'gray' }]}>
+            {isOnline ? 'Online' : 'Offline'}
+          </Text>
         </View>
       </TouchableOpacity>
     );
