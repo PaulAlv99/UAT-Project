@@ -6,6 +6,20 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from "expo-router";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from 'react-native-reanimated';
+
+const getPasswordStrength = (password) => {
+  let score = 0;
+  if (password.length >= 6) score++;
+  if (/[A-Z]/.test(password)) score++;
+  if (/[0-9]/.test(password)) score++;
+  if (/[^A-Za-z0-9]/.test(password)) score++;
+  return score;
+};
 
 const RegisterScreen = () => {
   const router = useRouter();
@@ -15,7 +29,14 @@ const RegisterScreen = () => {
   const [preference, setPreference] = React.useState('');
   const [recoveryPhrase, setRecoveryPhrase] = React.useState('');
   const [cookiesAccepted, setCookiesAccepted] = React.useState(true);
-  const [imageBase64, setImageBase64] = React.useState<string | null>(null);
+  const [imageBase64, setImageBase64] = React.useState(null);
+
+  const strength = getPasswordStrength(password);
+  const barWidth = useSharedValue(0);
+
+  React.useEffect(() => {
+    barWidth.value = withTiming((strength / 4) * 100, { duration: 300 });
+  }, [strength]);
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -25,7 +46,6 @@ const RegisterScreen = () => {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-
       mediaTypes: ['images'],
       base64: true,
       quality: 0.5,
@@ -66,8 +86,6 @@ const RegisterScreen = () => {
           setPreference('');
           setRecoveryPhrase('');
           setImageBase64('');
-
-
           router.push("/(tabs)/login");
         } else {
           alert(data.message || "Registration failed.");
@@ -97,10 +115,32 @@ const RegisterScreen = () => {
                 <Text style={styles.pickText}>Pick Profile Image</Text>
               )}
             </TouchableOpacity>
-
+            <View style={{ width: '90%', marginBottom: 2 }}>
+                <Text style={styles.strengthLabel}>
+                    {['Too weak', 'Weak', 'Fair', 'Strong', 'Very strong'][strength]}
+                </Text>
+                  <View style={styles.strengthWrapper}>
+                    <Animated.View style={[styles.strengthBar, useAnimatedStyle(() => ({
+                      width: `${barWidth.value}%`,
+                      backgroundColor:
+                        strength <= 1 ? '#d32f2f' :
+                        strength === 2 ? '#fbc02d' :
+                        strength === 3 ? '#388e3c' : '#2e7d32',
+                    }))]} />
+                  </View>
+              </View>
             <TextInput style={styles.input} placeholder="FULL NAME" value={name} onChangeText={setName} placeholderTextColor="#95002a" />
             <TextInput style={styles.input} placeholder="EMAIL" value={email} onChangeText={setEmail} placeholderTextColor="#95002a" keyboardType="email-address" />
-            <TextInput style={styles.input} placeholder="PASSWORD" value={password} onChangeText={setPassword} placeholderTextColor="#95002a" secureTextEntry />
+
+
+            <TextInput
+              style={styles.input}
+              placeholder="PASSWORD"
+              value={password}
+              onChangeText={setPassword}
+              placeholderTextColor="#95002a"
+              secureTextEntry
+            />
             <TextInput style={styles.input} placeholder="RECOVERY PHRASE" value={recoveryPhrase} onChangeText={setRecoveryPhrase} placeholderTextColor="#95002a" />
             <TextInput style={styles.input} placeholder="FOOD PREFERENCE" value={preference} onChangeText={setPreference} placeholderTextColor="#95002a" />
 
@@ -118,9 +158,7 @@ const RegisterScreen = () => {
               <Text style={styles.confirmText}>CONFIRM</Text>
             </TouchableOpacity>
 
-            <Text style={styles.loginLink} onPress={() => router.push("/(tabs)/login")}>
-              Already have an account? LOGIN
-            </Text>
+            <Text style={styles.loginLink} onPress={() => router.push("/(tabs)/login")}>Already have an account? LOGIN</Text>
           </ScrollView>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
@@ -136,6 +174,25 @@ const styles = StyleSheet.create({
   input: {
     width: "90%", backgroundColor: "#ffe789", borderRadius: 100, borderWidth: 5, borderColor: "#e5b700",
     paddingHorizontal: 20, paddingVertical: 14, fontSize: 16, color: "#95002a", fontFamily: "OpenSans-Bold", marginVertical: 8,
+  },
+  strengthWrapper: {
+    width: "100%",
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#ffe789",
+    overflow: "hidden",
+    marginBottom: 6,
+  },
+  strengthBar: {
+    height: "100%",
+    borderRadius: 4,
+  },
+  strengthLabel: {
+    fontFamily: "OpenSans-Bold",
+    fontSize: 14,
+    color: "#fff",
+    alignSelf: "flex-start",
+    marginBottom: 8,
   },
   imagePicker: {
     marginBottom: 12,

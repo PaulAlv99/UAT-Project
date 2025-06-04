@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Frontend",
-    "slug": "Frontend",
+    "name": "RecipeTop",
+    "slug": "RecipeTop",
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
