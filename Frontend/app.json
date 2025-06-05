@@ -12,6 +12,11 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
+        "UISupportedInterfaceOrientations": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight"
+        ],
         "NSLocationWhenInUseUsageDescription": "Allow $(PRODUCT_NAME) to use your location"
       }
     },
