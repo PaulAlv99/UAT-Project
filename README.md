@@ -1,8 +1,6 @@
 #UAT-Project
 
 **Ubiquitous Applications Technologies Project**  
-By **Paulo Alves** and **Francisco Afonseca**
-
 ---
 
 ## Getting Started
