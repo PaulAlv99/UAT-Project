@@ -3,6 +3,7 @@
 **Ubiquitous Applications Technologies Project**  
 ---
 
+#### Developed a mobile app where users can post their recipes for sale, allowing others to purchase them and a bit of customization of user profile. The platform includes a chat feature where users can communicate with each other; however, for privacy and security, it would be better if only users who have bought or sold recipes between each other could appear and interact.
 ## Getting Started
 
 ### 1. Backend Setup
